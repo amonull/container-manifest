@@ -1,13 +1,13 @@
 package container
 
 type Container struct {
-	Name        string
-	Home        string // path to home on user machine
-	exports     []string
-	imports     []string
-	preScripts  []string // list of paths
-	periScripts []string // list of paths
-	postScripts []string // list of paths
+	Name            string
+	Home            string // path to home on user machine
+	exports         []string
+	imports         []string
+	preScriptsBase  string // path to scripts/pre dir
+	periScriptsBase string // path to scripts/pre dir
+	postScriptsBase string // path to scripts/pre dir
 }
 
 var instance *Container
