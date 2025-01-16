@@ -5,6 +5,7 @@ type Flags struct {
 	LogFile          string
 	ScriptsTmpDir    string
 	ImageBuildTmpDir string
+	ManifestFile     string
 }
 
 var instance *Flags
