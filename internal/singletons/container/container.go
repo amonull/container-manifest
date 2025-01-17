@@ -1,5 +1,7 @@
 package container
 
+import "sync"
+
 type Container struct {
 	Name            string
 	Home            string // path to home on user machine
@@ -13,9 +15,10 @@ type Container struct {
 var instance *Container
 
 func GetInstance() *Container {
-	if instance == nil {
-		instance = new(Container)
-	}
-
+	sync.OnceFunc(func() {
+		if instance == nil {
+			instance = new(Container)
+		}
+	})
 	return instance
 }

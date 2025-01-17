@@ -1,5 +1,7 @@
 package flags
 
+import "sync"
+
 type Flags struct {
 	LogLevel         int8
 	LogFile          string
@@ -11,9 +13,11 @@ type Flags struct {
 var instance *Flags
 
 func GetInstance() *Flags {
-	if instance == nil {
-		instance = new(Flags)
-	}
+	sync.OnceFunc(func() {
+		if instance == nil {
+			instance = new(Flags)
+		}
+	})
 
 	return instance
 }
