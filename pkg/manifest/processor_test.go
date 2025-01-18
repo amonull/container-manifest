@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/amonull/container-manifest/internal/manifest"
+	manifest2 "github.com/amonull/container-manifest/pkg/manifest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +34,7 @@ func TestProcessListFiles(t *testing.T) {
 		filepath.Join(testOutPath, "1"),
 	}
 
-	err := manifest.ProcessListFiles(testDataScripts, testOutPath)
+	err := manifest2.ProcessListFiles(testDataScripts, testOutPath)
 	if err != nil {
 		t.Error(err)
 	}
@@ -59,7 +59,7 @@ func TestProcessListFiles(t *testing.T) {
 func TestPrepareImage(t *testing.T) {
 	setup()
 
-	testData := manifest.Image{
+	testData := manifest2.Image{
 		ContainerFile: "containerFile values",
 		Files: map[string]string{
 			"foobar":  "foobar value",
@@ -67,7 +67,7 @@ func TestPrepareImage(t *testing.T) {
 		},
 	}
 
-	tmpDirPath, err := manifest.PrepareImage(testData)
+	tmpDirPath, err := manifest2.PrepareImage(testData)
 	if err != nil {
 		t.Error(err)
 	}
