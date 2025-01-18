@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/amonull/container-manifest/internal/singletons/container"
-	"github.com/amonull/container-manifest/internal/singletons/image"
+	"github.com/amonull/container-manifest/pkg/singletons/container"
+	"github.com/amonull/container-manifest/pkg/singletons/image"
 )
 
 // ApplyManifest - reads a manifest file from given string path and returns any errors it had.
