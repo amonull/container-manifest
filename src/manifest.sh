@@ -1,6 +1,39 @@
 #!/bin/bash
 
 
+###########################################
+################## UTILS ##################
+###########################################
+
+help() {
+    printf "  usage: manifest.sh --manifest ./manifest-file.yaml [option(s)
+
+    Options:
+    -m, --manifest <file>
+        the manifest file to use to build image and container
+    -B, --ignore-build
+        do not build container image (assumes image already exists)
+    -F, --ignore-build-files
+        do not create the build files in the tmp dir
+    -D, --ignore-container
+        do not create a container (assumes container already exists)
+    -P, --ignore-pre
+        does not run pre commands
+    -R, --ignore-peri
+        does not run peri commands
+    -T, --ignore-post
+        does not run post commands
+    -I, --ignore-import
+        does not import packages to container
+    -E, --ignore-export
+        does not export packages from container
+    -K, --keep-tmp
+        does not delete tmp files under /tmp/tmp.XXXXXXXXXXX (one for image build another for container build)
+    -h, --help
+        print this screen\n"
+}
+
+
 ##########################################
 ################## YAML ##################
 ##########################################
@@ -86,7 +119,7 @@ __listGetLength() {
     if [[ -z "$result" ]]; then
         echo -n '0'
     else
-        echo -n $result
+        echo -n "$result"
     fi
 }
 
@@ -111,12 +144,12 @@ distrobox_run() {
     # TODO: find a way to force bash to make a distinction between $2 and $3 inside $@
     # currently when 'bash' '-c' 'echo hello world' is pushed inside of $@ it becomes a
     # single string instead of a list of strings
-    /usr/bin/distrobox-enter --name $__CONTAINER_NAME -- "$@"
+    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- "$@"
 }
 
 # NOTE: this will run a script only in bash, bash is supplied the flag '-c'
 distrobox_run-cmd() {
-    /usr/bin/distrobox-enter --name $__CONTAINER_NAME -- '/usr/bin/bash' '-c' "$@"
+    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/bash' '-c' "$@"
 }
 
 distrobox_export() {
@@ -131,7 +164,7 @@ distrobox_export() {
         isBinaryOrApp="-b"
 
         # assumes just name is given
-        [[ -x $pathToBinOrApp ]] || pathToBinOrApp="$(which $pathToBinOrApp)"
+        [[ -x "$pathToBinOrApp" ]] || pathToBinOrApp="$(which "$pathToBinOrApp")"
     fi
 
     [[ -f "$pathToBinOrApp" ]] || exit 1
@@ -147,13 +180,10 @@ distrobox_export() {
 distrobox_import() {
     local import=$1
 
-    mkdir -p $__CONTAINER_HOME/.local/bin
+    mkdir -p "$__CONTAINER_HOME/.local/bin"
 
-    cat << EOF > $__CONTAINER_HOME/.local/bin/$(basename $import)
-#!/bin/sh
-
-distrobox-host-exec $1 # WARNING: this will not work as it is in cat <<< EOF str
-EOF
+    echo "#!/bin/sh"                > "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
+    echo "distrobox-host-exec $1"   >> "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
 }
 
 distrobox_create_pod() {
@@ -176,12 +206,12 @@ distrobox_stop_container() {
 ##########################################
 
 podman_buildImage() {
-    podman build --tag $__CONTAINER_NAME $__IMAGE_BUILD_DIR
+    podman build --tag "$__CONTAINER_NAME" "$__IMAGE_BUILD_DIR"
 }
 
 podman_writeContainerFileToTmp() {
     local containerFile="$(yaml_getContainerFile)"
-    echo -e "$containerFile" > $__IMAGE_BUILD_DIR/Containerfile
+    echo -e "$containerFile" > "$__IMAGE_BUILD_DIR/Containerfile"
 }
 
 podman_writeFilesToTmp() {
@@ -232,61 +262,143 @@ __writeScriptToTmp() {
 ##########################################
 ################## MAIN ##################
 ##########################################
-__MANIFEST_FILE="$HOME/Documents/tmp/manifest.yaml"
-__IMAGE_BUILD_DIR="$(mktemp -d)"
-__CONTAINER_SCRIPTS_TMP_DIR="$(mktemp -d)"
-__CONTAINER_NAME="$(yaml_getName)"
-__CONTAINER_HOME="$(yaml_getHome)"
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -m|--manifest)
+            __MANIFEST_FILE="$2"
+            shift
+            ;;
 
-# [ write all files ]
-podman_writeContainerFileToTmp
-podman_writeFilesToTmp
-container_writeScriptsPreToTmp
-container_writeScriptsPeriToTmp
-container_writeScriptsPostToTmp
+        -B|--ignore-build)
+            __OPT_IGNORE_BUILD=1
+            ;;
 
-# [ build image ]
-podman_buildImage
+        -F|--ignore-build-files)
+            __OPT_IGNORE_BUILD_FILES=1
+            ;;
 
-[ exec pre scripts ]
-for preScript in $__CONTAINER_SCRIPTS_TMP_DIR/pre/*; do
-    if [[ -x "$preScript" ]]; then
-        bash "$preScript" "$__CONTAINER_NAME" "$__CONTAINER_HOME"
+        -D|--ignore-container)
+            __OPT_IGNORE_CONTAINER=1
+            ;;
+
+        -P|--ignore-pre)
+            __OPT_IGNORE_PRE=1
+            ;;
+
+        -R|--ignore-peri)
+            __OPT_IGNORE_PERI=1
+            ;;
+
+        -T|--ignore-post)
+            __OPT_IGNORE_POST=1
+            ;;
+
+        -I|--ignore-import)
+            __OPT_IGNORE_IMPORT=1
+            ;;
+
+        -E|--ignore-export)
+            __OPT_IGNORE_EXPORT=1
+            ;;
+
+        -K|--keep-tmp)
+            __OPT_KEEP_TMP=1
+            ;;
+
+
+        -h|--help)
+            help
+            exit 0
+            ;;
+        *)
+            echo "Unknown option $1"
+            help
+            exit 1
+            ;;
+    esac
+    shift
+done
+
+if [ -z "${__MANIFEST_FILE+x}" ]; then
+    echo "-m, --manifest option MUST be set"
+
+    help
+    
+    exit 1
+else
+    __IMAGE_BUILD_DIR="$(mktemp -d)"
+    __CONTAINER_SCRIPTS_TMP_DIR="$(mktemp -d)"
+    __CONTAINER_NAME="$(yaml_getName)"
+    __CONTAINER_HOME="$(yaml_getHome)"
+fi
+
+if [ -z "${__OPT_IGNORE_BUILD+x}" ]; then
+    
+    podman_writeContainerFileToTmp
+
+    if [ -z "${__OPT_IGNORE_BUILD_FILES+x}" ]; then
+        podman_writeFilesToTmp
     fi
-done
 
-# [ create container ]
-distrobox_create_pod
+    podman_buildImage
+    
+fi
 
-# [ exec peri scripts ]
-for script in $(distrobox_run-cmd "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/peri/ -type f -executable -exec realpath {} \;"); do
-    distrobox_run-cmd "$script"
-done
+if [ -z "${__OPT_IGNORE_CONTAINER+x}" ]; then
+    distrobox_create_pod
+fi
 
-# [ shut container down ]
+if [ -z "${__OPT_IGNORE_PRE+x}" ]; then
+    container_writeScriptsPreToTmp
+
+    for preScript in $__CONTAINER_SCRIPTS_TMP_DIR/pre/*; do
+        if [[ -x "$preScript" ]]; then
+            bash "$preScript" "$__CONTAINER_NAME" "$__CONTAINER_HOME"
+        fi
+    done
+
+fi
+
+if [ -z "${__OPT_IGNORE_PERI+x}" ]; then
+    container_writeScriptsPeriToTmp
+    
+    for script in $(distrobox_run-cmd "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/peri/ -type f -executable -exec realpath {} \;"); do
+        distrobox_run-cmd "$script"
+    done
+
+    distrobox_stop_container
+fi
+
+if [ -z "${__OPT_IGNORE_POST+x}" ]; then
+    container_writeScriptsPostToTmp
+
+    for script in $(distrobox_run-cmd "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/post/ -type f -executable -exec realpath {} \;"); do
+        distrobox_run-cmd "$script"
+    done
+
+    distrobox_stop_container
+fi
+
+if [ -z "${__OPT_IGNORE_IMPORT+x}" ]; then
+    for ((index=0; index != yaml_getExportsLength; index++)); do
+        file="$(yaml_getExportsIndexed $index)"
+
+        distrobox_export "$file"
+    done
+fi
+
+if [ -z "${__OPT_IGNORE_EXPORT+x}" ]; then
+    for ((index=0; index != yaml_getExportsLength; index++)); do
+        file="$(yaml_getExportsIndexed $index)"
+
+        distrobox_import "$file"
+    done
+fi
+
+if [ -z "${__OPT_KEEP_TMP+x}" ]; then
+    rm -rf "${__IMAGE_BUILD_DIR}"
+    rm -rf "${__CONTAINER_SCRIPTS_TMP_DIR}"
+fi
+
 distrobox_stop_container
-
-# [ exec post scripts ]
-for script in $(distrobox_run-cmd "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/post/ -type f -executable -exec realpath {} \;"); do
-    distrobox_run-cmd "$script"
-done
-
-# [ shut container down ]
-distrobox_stop_container
-
-# [ export apps ]
-for ((index=0; index != yaml_getExportsLength; index++)); do
-    local file="$(yaml_getExportsIndexed $index)"
-
-    distrobox_export $file
-done
-
-# [ import apps ]
-for ((index=0; index != yaml_getExportsLength; index++)); do
-    local file="$(yaml_getExportsIndexed $index)"
-
-    distrobox_import $file
-done
-
-# [ shut container down ]
-distrobox_stop_container
+exit 0
