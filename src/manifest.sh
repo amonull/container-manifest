@@ -47,11 +47,11 @@ yaml_getHome() {
 }
 
 yaml_getExportsLength() {
-    __listGetLength '.container.exports'
+    __listGetLength '.container.export'
 }
 
 yaml_getImportsLength() {
-    __listGetLength '.container.imports'
+    __listGetLength '.container.import'
 }
 
 yaml_getScriptsPreLength() {
@@ -68,12 +68,12 @@ yaml_getScriptsPostLength() {
 
 yaml_getExportsIndexed() {
     local index=$1
-    __runYamlFilter ".container.exports[$index]"
+    __runYamlFilter ".container.export[$index]"
 }
 
 yaml_getImportsIndexed() {
     local index=$1
-    __runYamlFilter ".container.imports[$index]"
+    __runYamlFilter ".container.import[$index]"
 }
 
 yaml_getScriptsPreIndexed() {
@@ -156,7 +156,7 @@ distrobox_export() {
     local pathToBinOrApp=$1
     local isBinaryOrApp=""
 
-    if [[ "$pathToBinOrApp" == "*.desktop" ]]; then
+    if [[ $pathToBinOrApp == *.desktop ]]; then
         isBinaryOrApp="-a"
 
         [[ -f $pathToBinOrApp ]] || pathToBinOrApp="$__CONTAINER_HOME/.local/share/applications/$pathToBinOrApp"
@@ -166,10 +166,6 @@ distrobox_export() {
         # assumes just name is given
         [[ -x "$pathToBinOrApp" ]] || pathToBinOrApp="$(which "$pathToBinOrApp")"
     fi
-
-    [[ -f "$pathToBinOrApp" ]] || exit 1
-
-    [[ "$isBinaryOrApp" == "-b" && -x "$pathToBinOrApp" ]] || exit 1
 
     distrobox_run-cmd "distrobox-export $isBinaryOrApp $pathToBinOrApp"
 }
@@ -182,8 +178,8 @@ distrobox_import() {
 
     mkdir -p "$__CONTAINER_HOME/.local/bin"
 
-    echo "#!/bin/sh"                > "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
-    echo "distrobox-host-exec $1"   >> "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
+    echo '#!/bin/sh'                > "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
+    echo 'distrobox-host-exec $1'   >> "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
 }
 
 distrobox_create_pod() {
@@ -380,18 +376,18 @@ if [ -z "${__OPT_IGNORE_POST+x}" ]; then
 fi
 
 if [ -z "${__OPT_IGNORE_IMPORT+x}" ]; then
-    for ((index=0; index != yaml_getExportsLength; index++)); do
-        file="$(yaml_getExportsIndexed $index)"
+    for ((index=0; index != $(yaml_getImportsLength); index++)); do
+        file="$(yaml_getImportsIndexed $index)"
 
-        distrobox_export "$file"
+        distrobox_import "$file"
     done
 fi
 
 if [ -z "${__OPT_IGNORE_EXPORT+x}" ]; then
-    for ((index=0; index != yaml_getExportsLength; index++)); do
+    for ((index=0; index != $(yaml_getExportsLength); index++)); do
         file="$(yaml_getExportsIndexed $index)"
 
-        distrobox_import "$file"
+        distrobox_export "$file"
     done
 fi
 
