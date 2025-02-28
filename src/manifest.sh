@@ -54,14 +54,20 @@ yaml_getImportsLength() {
     __listGetLength '.container.import'
 }
 
+# func used by passing ref
+# shellcheck disable=SC2329
 yaml_getScriptsPreLength() {
     __listGetLength '.container.scripts.pre'
 }
 
+# func used by passing ref
+# shellcheck disable=SC2329
 yaml_getScriptsPeriLength() {
     __listGetLength '.container.scripts.peri'
 }
 
+# func used by passing ref
+# shellcheck disable=SC2329
 yaml_getScriptsPostLength() {
     __listGetLength '.container.scripts.post'
 }
@@ -76,16 +82,22 @@ yaml_getImportsIndexed() {
     __runYamlFilter ".container.import[$index]"
 }
 
+# func used by passing ref
+# shellcheck disable=SC2329
 yaml_getScriptsPreIndexed() {
     local index=$1
     __runYamlFilter ".container.scripts.pre[$index]"
 }
 
+# func used by passing ref
+# shellcheck disable=SC2329
 yaml_getScriptsPeriIndexed() {
     local index=$1
     __runYamlFilter ".container.scripts.peri[$index]"
 }
 
+# func used by passing ref
+# shellcheck disable=SC2329
 yaml_getScriptsPostIndexed() {
     local index=$1
     __runYamlFilter ".container.scripts.post[$index]"
@@ -182,6 +194,8 @@ distrobox_create_pod() {
         flags="$flags --home $__CONTAINER_HOME"
     fi
 
+    # passing split args required here to ensure distrobox picks them up as individual flags and not one massive flag
+    # shellcheck disable=SC2086
     distrobox create $flags
 }
 
