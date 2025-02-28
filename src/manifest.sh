@@ -163,11 +163,16 @@ distrobox_export() {
     else
         isBinaryOrApp="-b"
 
-        # assumes just name is given
+        # if pathToBinOrApp does not exist or is not exe on container try to find full path on it (assumes it just got the name)
         [[ -x "$pathToBinOrApp" ]] || pathToBinOrApp="$(distrobox_run-cmd "which $pathToBinOrApp")"
     fi
 
     distrobox_run-cmd "distrobox-export $isBinaryOrApp $pathToBinOrApp"
+
+    # if binary enhance export by using bash as interactive to ensure bashrc gets sourced
+    if [[ "$isBinaryOrApp" -eq "-b" ]]; then
+        sed -i "5s/ -- / -- 'bash' '-i' '-c' /" "$HOME/.local/bin/$(basename "$pathToBinOrApp")"
+    fi
 }
 
 # NOTE: this only works with binary apps or apps that are meant to be moved into ~/.local/bin/
