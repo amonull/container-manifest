@@ -357,6 +357,14 @@ if [ -z "${__OPT_IGNORE_PRE+x}" ]; then
 
 fi
 
+if [ -z "${__OPT_IGNORE_IMPORT+x}" ]; then
+    for ((index=0; index != $(yaml_getImportsLength); index++)); do
+        file="$(yaml_getImportsIndexed $index)"
+
+        distrobox_import "$file"
+    done
+fi
+
 if [ -z "${__OPT_IGNORE_PERI+x}" ]; then
     container_writeScriptsPeriToTmp
     
@@ -375,14 +383,6 @@ if [ -z "${__OPT_IGNORE_POST+x}" ]; then
     done
 
     distrobox_stop_container
-fi
-
-if [ -z "${__OPT_IGNORE_IMPORT+x}" ]; then
-    for ((index=0; index != $(yaml_getImportsLength); index++)); do
-        file="$(yaml_getImportsIndexed $index)"
-
-        distrobox_import "$file"
-    done
 fi
 
 if [ -z "${__OPT_IGNORE_EXPORT+x}" ]; then
