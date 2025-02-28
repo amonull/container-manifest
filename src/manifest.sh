@@ -164,7 +164,7 @@ distrobox_export() {
         isBinaryOrApp="-b"
 
         # assumes just name is given
-        [[ -x "$pathToBinOrApp" ]] || pathToBinOrApp="$(which "$pathToBinOrApp")"
+        [[ -x "$pathToBinOrApp" ]] || pathToBinOrApp="$(distrobox_run-cmd "which $pathToBinOrApp")"
     fi
 
     distrobox_run-cmd "distrobox-export $isBinaryOrApp $pathToBinOrApp"
