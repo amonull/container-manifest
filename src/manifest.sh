@@ -139,17 +139,25 @@ __runYamlFilter() {
 ############### DISTROBOX ################
 ##########################################
 
-# NOTE: runs a single command (preferably a full path to the cmd), opts cannot be supplied
 distrobox_run() {
-    # TODO: find a way to force bash to make a distinction between $2 and $3 inside $@
-    # currently when 'bash' '-c' 'echo hello world' is pushed inside of $@ it becomes a
-    # single string instead of a list of strings
     /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- "$@"
 }
 
 # NOTE: this will run a script only in bash, bash is supplied the flag '-c' and '-i' flag
 distrobox_run-cmd() {
-    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/bash' '-i' '-c' "$@"
+    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/bash' '-c' "$@"
+}
+
+distrobox_run-which() {
+    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/which' "$@"
+}
+
+distrobox_run-find() {
+    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/find' "$@"
+}
+
+distrobox_run-export() {
+    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/distrobox-export' "$@"
 }
 
 distrobox_export() {
@@ -164,15 +172,10 @@ distrobox_export() {
         isBinaryOrApp="-b"
 
         # if pathToBinOrApp does not exist or is not exe on container try to find full path on it (assumes it just got the name)
-        [[ -x "$pathToBinOrApp" ]] || pathToBinOrApp="$(distrobox_run-cmd "which $pathToBinOrApp")"
+        [[ -x "$pathToBinOrApp" ]] || pathToBinOrApp="$(distrobox_run-which "$pathToBinOrApp")"
     fi
 
-    distrobox_run-cmd "distrobox-export $isBinaryOrApp $pathToBinOrApp"
-
-    # if binary enhance export by using bash as interactive to ensure bashrc gets sourced
-    if [[ "$isBinaryOrApp" -eq "-b" ]]; then
-        sed -i "5s/ -- / -- 'bash' '-i' '-c' /" "$HOME/.local/bin/$(basename "$pathToBinOrApp")"
-    fi
+    distrobox_run-export "$isBinaryOrApp" "$pathToBinOrApp"
 }
 
 # NOTE: this only works with binary apps or apps that are meant to be moved into ~/.local/bin/
@@ -373,7 +376,7 @@ fi
 if [ -z "${__OPT_IGNORE_PERI+x}" ]; then
     container_writeScriptsPeriToTmp
     
-    for script in $(distrobox_run-cmd "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/peri/ -type f -executable -exec realpath {} \;"); do
+    for script in $(distrobox_run-find "/run/host/$__CONTAINER_SCRIPTS_TMP_DIR/peri/" '-type' 'f' '-executable' '-exec' 'realpath' '{}' '+'); do
         distrobox_run-cmd "$script"
     done
 
@@ -383,7 +386,7 @@ fi
 if [ -z "${__OPT_IGNORE_POST+x}" ]; then
     container_writeScriptsPostToTmp
 
-    for script in $(distrobox_run-cmd "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/post/ -type f -executable -exec realpath {} \;"); do
+    for script in $(distrobox_run-find "/run/host/$__CONTAINER_SCRIPTS_TMP_DIR/post/" '-type' 'f' '-executable' '-exec' 'realpath' '{}' '+'); do
         distrobox_run-cmd "$script"
     done
 
