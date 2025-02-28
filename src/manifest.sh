@@ -143,23 +143,6 @@ distrobox_run() {
     /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- "$@"
 }
 
-# NOTE: this will run a script only in bash, bash is supplied the flag '-c' and '-i' flag
-distrobox_run-cmd() {
-    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/bash' '-c' "$@"
-}
-
-distrobox_run-which() {
-    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/which' "$@"
-}
-
-distrobox_run-find() {
-    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/find' "$@"
-}
-
-distrobox_run-export() {
-    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/distrobox-export' "$@"
-}
-
 distrobox_export() {
     local pathToBinOrApp=$1
     local isBinaryOrApp=""
@@ -172,10 +155,10 @@ distrobox_export() {
         isBinaryOrApp="-b"
 
         # if pathToBinOrApp does not exist or is not exe on container try to find full path on it (assumes it just got the name)
-        [[ -x "$pathToBinOrApp" ]] || pathToBinOrApp="$(distrobox_run-which "$pathToBinOrApp")"
+        [[ -x "$pathToBinOrApp" ]] || pathToBinOrApp="$(distrobox_run '/usr/bin/which' "$pathToBinOrApp")"
     fi
 
-    distrobox_run-export "$isBinaryOrApp" "$pathToBinOrApp"
+    distrobox_run '/usr/bin/distrobox-export' "$isBinaryOrApp" "$pathToBinOrApp"
 }
 
 # NOTE: this only works with binary apps or apps that are meant to be moved into ~/.local/bin/
@@ -376,8 +359,8 @@ fi
 if [ -z "${__OPT_IGNORE_PERI+x}" ]; then
     container_writeScriptsPeriToTmp
     
-    for script in $(distrobox_run-find "/run/host/$__CONTAINER_SCRIPTS_TMP_DIR/peri/" '-type' 'f' '-executable' '-exec' 'realpath' '{}' '+'); do
-        distrobox_run-cmd "$script"
+    for script in $(distrobox_run '/usr/bin/find' "/run/host/$__CONTAINER_SCRIPTS_TMP_DIR/peri/" '-type' 'f' '-executable' '-exec' 'realpath' '{}' '+'); do
+        distrobox_run '/usr/bin/bash' '-i' '-c' "$script"
     done
 
     distrobox_stop_container
@@ -386,8 +369,8 @@ fi
 if [ -z "${__OPT_IGNORE_POST+x}" ]; then
     container_writeScriptsPostToTmp
 
-    for script in $(distrobox_run-find "/run/host/$__CONTAINER_SCRIPTS_TMP_DIR/post/" '-type' 'f' '-executable' '-exec' 'realpath' '{}' '+'); do
-        distrobox_run-cmd "$script"
+    for script in $(distrobox_run '/usr/bin/find' "/run/host/$__CONTAINER_SCRIPTS_TMP_DIR/post/" '-type' 'f' '-executable' '-exec' 'realpath' '{}' '+'); do
+        distrobox_run '/usr/bin/bash' '-i' '-c' "$script"
     done
 
     distrobox_stop_container
