@@ -262,5 +262,22 @@ image:
         yq
 ```
 
+# Empty example
+
+```yaml
+container:
+    name:
+    home:
+    export:
+    import:
+    scripts:
+        pre:
+        peri:
+        post:
+image:
+    Containerfile:
+    files:
+```
+
 # Notes
 There is some serious jankiness presented in this app for example when writing scripts that use escape chars like `\n` (like my usage in my post scripts in [full example](#full-example) during lua installation) will result in that char being interpreted as an actual newline and not a string literal of just `\n` to fix this i first escape the `\` with `\\`. There are some other problems as well like `.bashrc` not getting sourced while running scripts with peri or post so not having access to values defined in there, there are probably a lot more jank inside this tool as well so use with caution.
