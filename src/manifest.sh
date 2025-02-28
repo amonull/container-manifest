@@ -6,7 +6,7 @@
 ###########################################
 
 help() {
-    printf "  usage: manifest.sh --manifest ./manifest-file.yaml [option(s)
+    printf "  usage: manifest.sh --manifest ./manifest-file.yaml [option(s)]
 
     Options:
     -m, --manifest <file>
@@ -178,8 +178,10 @@ distrobox_import() {
 
     mkdir -p "$__CONTAINER_HOME/.local/bin"
 
-    echo '#!/bin/sh'                > "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
-    echo 'distrobox-host-exec $1'   >> "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
+    echo "#!/bin/sh"                > "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
+    echo "distrobox-host-exec $import \"\$@\""   >> "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
+
+    chmod +x "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
 }
 
 distrobox_create_pod() {
