@@ -91,6 +91,7 @@ container:
 
 pre scripts run before the container is started and is meant to be responsible for setting up the container space like setting up its home and config files used by apps that are installed by the container. Pre scripts are given a natural order from their indexing the first item declared on the list is given the name 0.sh and the second is given the name 1.sh this results in the first item to run before the second.
 All of the scripts for pre run using hosts bash and can run practically anything so be careful on what you do here to avoid breaking your system or doing something irreversible.
+Pre scripts are given two inputs `"$1"` and `"$2"` the first one is the containers name declared in [name](#name) and second is teh containers home declared in (home)[#home]
 
 #### peri
 ```yaml
