@@ -147,9 +147,9 @@ distrobox_run() {
     /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- "$@"
 }
 
-# NOTE: this will run a script only in bash, bash is supplied the flag '-c'
+# NOTE: this will run a script only in bash, bash is supplied the flag '-c' and '-i' flag
 distrobox_run-cmd() {
-    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/bash' '-c' "$@"
+    /usr/bin/distrobox-enter --name "$__CONTAINER_NAME" -- '/usr/bin/bash' '-i' '-c' "$@"
 }
 
 distrobox_export() {
