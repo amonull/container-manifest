@@ -7,4 +7,8 @@ Most values used in this program should also work with other container manager a
 - bash
 - yq
 - distrobox
-- podman 
+- podman
+
+# Doc
+- [how to write manifest file](./doc/manifest-structure.md)
+- [how to use manifest.sh](./doc/usage.md)
