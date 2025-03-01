@@ -188,6 +188,18 @@ distrobox_import() {
 
     [ -d "$(dirname "$hostDest")" ] || mkdir "$(dirname "$hostDest")"
 
+    # find source for import (give priority to system/local install)
+    if which "$import" &> /dev/null; then
+        import="$(which "$import")"
+    else
+        if command -v "flatpak" &> /dev/null; then
+            local appId="$(flatpak list | grep -i "$import" | awk '{print $2}')"
+            if flatpak info "$appId" &> /dev/null; then
+                import="flatpak run $appId"
+            fi
+        fi
+    fi
+
     echo '#!/bin/sh' > "$hostDest"
     echo "distrobox-host-exec $import \"\$@\"" >> "$hostDest"
     chmod +x "$hostDest"
