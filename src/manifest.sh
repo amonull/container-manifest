@@ -173,18 +173,22 @@ distrobox_export() {
     distrobox_run '/usr/bin/distrobox-export' "$isBinaryOrApp" "$pathToBinOrApp"
 }
 
+# This is a very hacky way to move files into root partition of a container but works
 # NOTE: this only works with binary apps or apps that are meant to be moved into ~/.local/bin/
 # and ideally a full path should be supplied
 # NOTE: this function does not run inside the container so container_home is used
 distrobox_import() {
     local import=$1
+    local containerDest="/usr/local/bin/$(basename "$import")"
+    local hostDest="$__CONTAINER_SCRIPTS_TMP_DIR/import/$(basename "$import")"
 
-    mkdir -p "$__CONTAINER_HOME/.local/bin"
+    [ -d "$(dirname "$hostDest")" ] || mkdir "$(dirname "$hostDest")"
 
-    echo "#!/bin/sh"                > "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
-    echo "distrobox-host-exec $import \"\$@\""   >> "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
+    echo '#!/bin/sh' > "$hostDest"
+    echo "distrobox-host-exec $import \"\$@\"" >> "$hostDest"
+    chmod +x "$hostDest"
 
-    chmod +x "$__CONTAINER_HOME/.local/bin/$(basename "$import")"
+    distrobox_run '/usr/bin/sudo' 'cp' "/run/host/$hostDest" "$containerDest"
 }
 
 distrobox_create_pod() {
