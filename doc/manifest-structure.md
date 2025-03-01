@@ -49,6 +49,24 @@ container:
     home: /home/.container/testing
 ```
 
+### image
+```yaml
+container:
+    image: ubuntu:latest
+```
+
+Passes the image as seen above directly to distrobox-create, anything that can be passed to distrobox-create can be written here, when it is empty `localhost/${.container.name}` is assumed. If image is defined the image section becomes unused and is never ran.
+
+### createArgs
+```yaml
+container:
+    createArgs:
+    - --additional-packages "systemd docker nix"
+    - --unshare-all
+```
+
+Passes args defined to distrobox-create during container creation
+
 An optional section it declares a home space to use for the container (passes -H arg to distrobox during create)
 
 ### export
@@ -268,6 +286,8 @@ image:
 container:
     name:
     home:
+    image:
+    createArgs:
     export:
     import:
     scripts:

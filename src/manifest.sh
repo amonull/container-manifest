@@ -46,6 +46,14 @@ yaml_getHome() {
     __runYamlFilter '.container.home'
 }
 
+yaml_getImage() {
+    __runYamlFilter '.container.image'
+}
+
+yaml_getCreateArgsLength() {
+    __listGetLength '.container.createArgs'
+}
+
 yaml_getExportsLength() {
     __listGetLength '.container.export'
 }
@@ -70,6 +78,11 @@ yaml_getScriptsPeriLength() {
 # shellcheck disable=SC2329
 yaml_getScriptsPostLength() {
     __listGetLength '.container.scripts.post'
+}
+
+yaml_getCreateArgsIndexed() {
+    local index=$1
+    __runYamlFilter ".container.createArgs[$index]"
 }
 
 yaml_getExportsIndexed() {
@@ -208,11 +221,21 @@ distrobox_import() {
 }
 
 distrobox_create_pod() {
-    local flags="--image localhost/$__CONTAINER_NAME --name $__CONTAINER_NAME"
+    local flags="--name $__CONTAINER_NAME"
 
     if [[ -n "$__CONTAINER_HOME" ]]; then
         flags="$flags --home $__CONTAINER_HOME"
     fi
+
+    if [[ -n "$__CONTAINER_IMAGE" ]]; then
+        flags="$flags --image $__CONTAINER_IMAGE"
+    else
+        flags="$flags --image localhost/$__CONTAINER_NAME"
+    fi
+
+    for ((index=0; index != $(yaml_getCreateArgsLength); index++)); do
+        flags="$flags $(yaml_getCreateArgsIndexed "$index")"
+    done
 
     # passing split args required here to ensure distrobox picks them up as individual flags and not one massive flag
     # shellcheck disable=SC2086
@@ -353,9 +376,10 @@ else
     __CONTAINER_SCRIPTS_TMP_DIR="$(mktemp -d)"
     __CONTAINER_NAME="$(yaml_getName)"
     __CONTAINER_HOME="$(yaml_getHome)"
+    __CONTAINER_IMAGE="$(yaml_getImage)"
 fi
 
-if [ -z "${__OPT_IGNORE_BUILD+x}" ]; then
+if [ -z "${__OPT_IGNORE_BUILD+x}" && -z "${__CONTAINER_IMAGE+x}" ]; then
     
     podman_writeContainerFileToTmp
 
