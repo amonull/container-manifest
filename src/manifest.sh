@@ -381,7 +381,7 @@ fi
 if [ -z "${__OPT_IGNORE_PERI+x}" ]; then
     container_writeScriptsPeriToTmp
     
-    for script in $(distrobox_run '/usr/bin/find' "/run/host/$__CONTAINER_SCRIPTS_TMP_DIR/peri/" '-type' 'f' '-executable' '-exec' 'realpath' '{}' '+'); do
+    for script in $(distrobox_run '/usr/bin/bash' '-c' "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/peri/ -type f -executable -exec realpath {} + | tac"); do
         distrobox_run '/usr/bin/bash' '-i' '-c' "$script"
     done
 
@@ -391,7 +391,7 @@ fi
 if [ -z "${__OPT_IGNORE_POST+x}" ]; then
     container_writeScriptsPostToTmp
 
-    for script in $(distrobox_run '/usr/bin/find' "/run/host/$__CONTAINER_SCRIPTS_TMP_DIR/post/" '-type' 'f' '-executable' '-exec' 'realpath' '{}' '+'); do
+    for script in $(distrobox_run '/usr/bin/bash' '-c' "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/post/ -type f -executable -exec realpath {} + | tac"); do
         distrobox_run '/usr/bin/bash' '-i' '-c' "$script"
     done
 
