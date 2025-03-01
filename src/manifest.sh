@@ -160,9 +160,16 @@ distrobox_export() {
     local isBinaryOrApp=""
 
     if [[ $pathToBinOrApp == *.desktop ]]; then
+        local correctedPath=""
         isBinaryOrApp="-a"
 
-        [[ -f $pathToBinOrApp ]] || pathToBinOrApp="$__CONTAINER_HOME/.local/share/applications/$pathToBinOrApp"
+        # attempt to set path to user applications
+        [[ -f $pathToBinOrApp ]] || correctedPath="$__CONTAINER_HOME/.local/share/applications/$pathToBinOrApp"
+        
+        # attempt to set path to system applications (if fails again let distrobox handle it)
+        [[ -f $correctedPath ]] || correctedPath="/usr/share/applications/$pathToBinOrApp"
+
+        pathToBinOrApp="$correctedPath"
     else
         isBinaryOrApp="-b"
 
@@ -174,9 +181,6 @@ distrobox_export() {
 }
 
 # This is a very hacky way to move files into root partition of a container but works
-# NOTE: this only works with binary apps or apps that are meant to be moved into ~/.local/bin/
-# and ideally a full path should be supplied
-# NOTE: this function does not run inside the container so container_home is used
 distrobox_import() {
     local import=$1
     local containerDest="/usr/local/bin/$(basename "$import")"
