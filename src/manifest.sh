@@ -253,7 +253,7 @@ distrobox_create_pod() {
         # shellcheck disable=SC2086
         argFlag=$(echo "$arg" | awk '{print $1}')
         
-        argValue="$(echo "$arg" | awk '{for (i=2; i<NF; i++) printf $i " "; print $NF}')"
+        argValue="$(echo "$arg" | awk '{for (i=2; i==NF; i++) printf $i " "}')"
         flags=($argFlag "$(sanitizeString "$argValue")" "${flags[@]}")
     done
     
