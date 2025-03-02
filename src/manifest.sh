@@ -36,7 +36,7 @@ help() {
 # remove starting and ending single or double quotes
 sanitizeString() {
     local string="$1"
-    sed -e "s|^[\"']||" -e "s|[\"']$||" <<< "$string"
+    sed -e "s|^[ \t]*[\"'][ \t]*||" -e "s|[ \t]*[\"'][ \t]*$||" <<< "$string"
 }
 
 ##########################################
@@ -253,10 +253,10 @@ distrobox_create_pod() {
         # shellcheck disable=SC2086
         argFlag=$(echo "$arg" | awk '{print $1}')
         
-        argValue="$(echo "$arg" | awk '{for (i=2; i==NF; i++) printf $i " "}')"
+        argValue="$(echo "$arg" | awk '{for (i=2; i<=NF; i++) printf $i " "}')"
         flags=($argFlag "$(sanitizeString "$argValue")" "${flags[@]}")
     done
-    
+
     distrobox create "${flags[@]}"
 }
 
