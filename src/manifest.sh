@@ -33,6 +33,11 @@ help() {
         print this screen\n"
 }
 
+# remove starting and ending single or double quotes
+sanitizeString() {
+    local string="$1"
+    sed -e "s|^[\"']||" -e "s|[\"']$||" <<< "$string"
+}
 
 ##########################################
 ################## YAML ##################
@@ -114,6 +119,14 @@ yaml_getScriptsPeriIndexed() {
 yaml_getScriptsPostIndexed() {
     local index=$1
     __runYamlFilter ".container.scripts.post[$index]"
+}
+
+yaml_getAutoStartLogin() {
+    __runYamlFilter '.container.autostart.login'
+}
+
+yaml_getAutoStartAfterBuild() {
+    __runYamlFilter '.container.autostart.afterBuild'
 }
 
 yaml_getContainerFile() {
@@ -199,7 +212,7 @@ distrobox_import() {
     local containerDest="/usr/local/bin/$(basename "$import")"
     local hostDest="$__CONTAINER_SCRIPTS_TMP_DIR/import/$(basename "$import")"
 
-    [ -d "$(dirname "$hostDest")" ] || mkdir "$(dirname "$hostDest")"
+    [[ -d "$(dirname "$hostDest")" ]] || mkdir "$(dirname "$hostDest")"
 
     # find source for import (give priority to system/local install)
     if which "$import" &> /dev/null; then
@@ -221,25 +234,32 @@ distrobox_import() {
 }
 
 distrobox_create_pod() {
-    local flags="--name $__CONTAINER_NAME"
+    local flags=(--name "$__CONTAINER_NAME")
 
     if [[ -n "$__CONTAINER_HOME" ]]; then
-        flags="$flags --home $__CONTAINER_HOME"
+        flags=(--home "$__CONTAINER_HOME" "${flags[@]}")
     fi
 
     if [[ -n "$__CONTAINER_IMAGE" ]]; then
-        flags="$flags --image $__CONTAINER_IMAGE"
+        flags=(--image "$__CONTAINER_IMAGE" "${flags[@]}")
     else
-        flags="$flags --image localhost/$__CONTAINER_NAME"
+        flags=(--image "localhost/$__CONTAINER_NAME" "${flags[@]}")
     fi
 
     for ((index=0; index != $(yaml_getCreateArgsLength); index++)); do
-        flags="$flags $(yaml_getCreateArgsIndexed "$index")"
-    done
+        arg="$(yaml_getCreateArgsIndexed "$index")"
 
+        # required to not be quoted to pass as arg correctly
+        # shellcheck disable=SC2086
+        argFlag=$(echo "$arg" | awk '{print $1}')
+        
+        argValue="$(echo "$arg" | awk '{for (i=2; i<NF; i++) printf $i " "; print $NF}')"
+        flags=($argFlag "$(sanitizeString "$argValue")" "${flags[@]}")
+    done
+    
     # passing split args required here to ensure distrobox picks them up as individual flags and not one massive flag
     # shellcheck disable=SC2086
-    distrobox create $flags
+    distrobox create "${flags[@]}"
 }
 
 distrobox_stop_container() {
@@ -308,7 +328,7 @@ __writeScriptToTmp() {
 ##########################################
 ################## MAIN ##################
 ##########################################
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
     case "$1" in
         -m|--manifest)
             __MANIFEST_FILE="$2"
@@ -365,7 +385,7 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-if [ -z "${__MANIFEST_FILE+x}" ]; then
+if [[ -z "${__MANIFEST_FILE+x}" ]]; then
     echo "-m, --manifest option MUST be set"
 
     help
@@ -377,13 +397,15 @@ else
     __CONTAINER_NAME="$(yaml_getName)"
     __CONTAINER_HOME="$(yaml_getHome)"
     __CONTAINER_IMAGE="$(yaml_getImage)"
+    __CONTAINER_AUTOSTART_LOGIN="$(yaml_getAutoStartLogin)"
+    __CONTAINER_AUTOSTART_AFTER_BUILD="$(yaml_getAutoStartAfterBuild)"
 fi
 
-if [ -z "${__OPT_IGNORE_BUILD+x}" && -z "${__CONTAINER_IMAGE+x}" ]; then
+if [[ -z "${__OPT_IGNORE_BUILD+x}" ]] && [[ -z "${__CONTAINER_IMAGE+x}" ]]; then
     
     podman_writeContainerFileToTmp
 
-    if [ -z "${__OPT_IGNORE_BUILD_FILES+x}" ]; then
+    if [[ -z "${__OPT_IGNORE_BUILD_FILES+x}" ]]; then
         podman_writeFilesToTmp
     fi
 
@@ -391,11 +413,11 @@ if [ -z "${__OPT_IGNORE_BUILD+x}" && -z "${__CONTAINER_IMAGE+x}" ]; then
     
 fi
 
-if [ -z "${__OPT_IGNORE_CONTAINER+x}" ]; then
+if [[ -z "${__OPT_IGNORE_CONTAINER+x}" ]]; then
     distrobox_create_pod
 fi
 
-if [ -z "${__OPT_IGNORE_PRE+x}" ]; then
+if [[ -z "${__OPT_IGNORE_PRE+x}" ]]; then
     container_writeScriptsPreToTmp
 
     for preScript in $__CONTAINER_SCRIPTS_TMP_DIR/pre/*; do
@@ -406,7 +428,7 @@ if [ -z "${__OPT_IGNORE_PRE+x}" ]; then
 
 fi
 
-if [ -z "${__OPT_IGNORE_IMPORT+x}" ]; then
+if [[ -z "${__OPT_IGNORE_IMPORT+x}" ]]; then
     for ((index=0; index != $(yaml_getImportsLength); index++)); do
         file="$(yaml_getImportsIndexed $index)"
 
@@ -414,7 +436,7 @@ if [ -z "${__OPT_IGNORE_IMPORT+x}" ]; then
     done
 fi
 
-if [ -z "${__OPT_IGNORE_PERI+x}" ]; then
+if [[ -z "${__OPT_IGNORE_PERI+x}" ]]; then
     container_writeScriptsPeriToTmp
     
     for script in $(distrobox_run '/usr/bin/bash' '-c' "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/peri/ -type f -executable -exec realpath {} + | tac"); do
@@ -424,7 +446,7 @@ if [ -z "${__OPT_IGNORE_PERI+x}" ]; then
     distrobox_stop_container
 fi
 
-if [ -z "${__OPT_IGNORE_POST+x}" ]; then
+if [[ -z "${__OPT_IGNORE_POST+x}" ]]; then
     container_writeScriptsPostToTmp
 
     for script in $(distrobox_run '/usr/bin/bash' '-c' "find /run/host/$__CONTAINER_SCRIPTS_TMP_DIR/post/ -type f -executable -exec realpath {} + | tac"); do
@@ -434,7 +456,7 @@ if [ -z "${__OPT_IGNORE_POST+x}" ]; then
     distrobox_stop_container
 fi
 
-if [ -z "${__OPT_IGNORE_EXPORT+x}" ]; then
+if [[ -z "${__OPT_IGNORE_EXPORT+x}" ]]; then
     for ((index=0; index != $(yaml_getExportsLength); index++)); do
         file="$(yaml_getExportsIndexed $index)"
 
@@ -442,10 +464,19 @@ if [ -z "${__OPT_IGNORE_EXPORT+x}" ]; then
     done
 fi
 
-if [ -z "${__OPT_KEEP_TMP+x}" ]; then
+if [[ -z "${__OPT_KEEP_TMP+x}" ]]; then
     rm -rf "${__IMAGE_BUILD_DIR}"
     rm -rf "${__CONTAINER_SCRIPTS_TMP_DIR}"
 fi
 
 distrobox_stop_container
+
+if [[ -n "${__CONTAINER_AUTOSTART_AFTER_BUILD+x}" ]] && [[ "${__CONTAINER_AUTOSTART_AFTER_BUILD}" -eq "true" ]]; then
+    distrobox_run '/usr/bin/echo' 'Container Started'
+fi
+
+if [[ -n "${__CONTAINER_AUTOSTART_LOGIN+x}" ]] && [[ "${__CONTAINER_AUTOSTART_LOGIN}" -eq "true" ]]; then
+    cp "$HOME/.local/share/applications/$__CONTAINER_NAME.desktop" "$HOME/.config/autostart/"
+fi
+
 exit 0

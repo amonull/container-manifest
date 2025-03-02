@@ -141,8 +141,29 @@ container:
 
 just like peri post scripts run inside the created container but it is ran after peri stops the container and just like pre the scripts are given a natural order and just like peri the scripts are ran inside the container using its bash. Virtually theres no difference between post and peri other than the fact that one is ran after the other and one is ran at second boot instead of first boot. Just like peri the container will be stopped after this is finished running.
 
+### autostart
+Section that allows auto starting containers. All nodes here can only hold true of false as value if anything else is entered in false is assumed.
+
+### login
+```yaml
+container:
+    autostart:
+        login: true
+```
+
+places the generated desktop file into `~/.config/autostart`
+
+### afterBuild
+```yaml
+container:
+    autostart:
+        afterBuild: true
+```
+
+allows restarting the container at the end of the script (default is false)
+
 # Full example
-Below is an example container file ive created and have used to setup my dev container. This file may be outdated it was created in 28/02/25 and worked at that time.
+Below is an example container file ive created and have used to setup my dev container. This file may be outdated it was created in 28/02/25 and worked at that time. (for more frequently used and updated examples check out this [repo](https://github.com/amonull/tools/tree/main/containers))
 
 ```yaml
 container:
@@ -294,6 +315,9 @@ container:
         pre:
         peri:
         post:
+    autostart:
+        login:
+        afterBuild:
 image:
     Containerfile:
     files:
