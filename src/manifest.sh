@@ -404,7 +404,7 @@ else
     __CONTAINER_AUTOSTART_AFTER_BUILD="$(yaml_getAutoStartAfterBuild)"
 fi
 
-if [[ -z "${__OPT_IGNORE_BUILD+x}" ]] && [[ -z "${__CONTAINER_IMAGE+x}" ]]; then
+if [[ -z "${__OPT_IGNORE_BUILD+x}" ]] && [[ -z "${__CONTAINER_IMAGE}" ]]; then
     
     podman_writeContainerFileToTmp
 
