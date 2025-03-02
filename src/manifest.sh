@@ -254,7 +254,12 @@ distrobox_create_pod() {
         argFlag=$(echo "$arg" | awk '{print $1}')
         
         argValue="$(echo "$arg" | awk '{for (i=2; i<=NF; i++) printf $i " "}')"
-        flags=($argFlag "$(sanitizeString "$argValue")" "${flags[@]}")
+
+        if [[ -n "$argValue" ]]; then
+            flags=($argFlag "$(sanitizeString "$argValue")" "${flags[@]}")
+        else
+            flags=($argFlag "${flags[@]}")
+        fi
     done
 
     distrobox create "${flags[@]}"
