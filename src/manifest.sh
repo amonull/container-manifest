@@ -474,7 +474,7 @@ if [[ -n "${__CONTAINER_AUTOSTART_AFTER_BUILD+x}" ]] && [[ "${__CONTAINER_AUTOST
 fi
 
 if [[ -n "${__CONTAINER_AUTOSTART_LOGIN+x}" ]] && [[ "${__CONTAINER_AUTOSTART_LOGIN}" -eq "true" ]]; then
-    distrobox-generate-entry "$__CONTAINER_NAME)"
+    distrobox-generate-entry "$__CONTAINER_NAME"
     
     [[ -f "$HOME/.config/autostart/$__CONTAINER_NAME.desktop" ]] || cp "$HOME/.local/share/applications/$__CONTAINER_NAME.desktop" "$HOME/.config/autostart/"
 fi
